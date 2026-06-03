@@ -12,6 +12,12 @@ import {
   MessageCircle,
   Lock,
   CreditCard,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Play,
+  Square,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -44,8 +50,137 @@ export default function ChatUI() {
   ]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [unlockChat, setUnlockChat] = useState(false);
+  const [unlockChat, setUnlockChat] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const [language, setLanguage] = useState("en-US");
+  const [isListening, setIsListening] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(false);
+  const [currentlySpeakingIndex, setCurrentlySpeakingIndex] = useState(null);
+
+  const recognitionRef = useRef(null);
+
+  // Set up Speech Recognition (Speech-to-Text)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = language;
+
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognition.onerror = (event) => {
+          console.error("Speech Recognition Error:", event.error);
+          setIsListening(false);
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (transcript) {
+            setText((prev) => prev ? prev + " " + transcript : transcript);
+          }
+        };
+
+        recognitionRef.current = recognition;
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, [language]);
+
+  // Clean up Speech Synthesis on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Speak last assistant message if autoSpeak is active
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant" && autoSpeak && !loading) {
+        speakText(lastMessage.content, messages.length - 1);
+      }
+    }
+  }, [messages, autoSpeak, loading]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error("Failed to start speech recognition:", error);
+      }
+    }
+  };
+
+  const speakText = (txt, index) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
+    if (window.speechSynthesis.speaking && currentlySpeakingIndex === index) {
+      window.speechSynthesis.cancel();
+      setCurrentlySpeakingIndex(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(txt);
+    utterance.lang = language;
+
+    // Load voices and select preferred language voice
+    const voices = window.speechSynthesis.getVoices();
+    const langVoice = voices.find(v => v.lang.startsWith(language.split("-")[0]));
+    if (langVoice) {
+      utterance.voice = langVoice;
+    }
+
+    utterance.onend = () => {
+      setCurrentlySpeakingIndex(null);
+    };
+
+    utterance.onerror = (event) => {
+      console.error("Speech Synthesis Error:", event);
+      setCurrentlySpeakingIndex(null);
+    };
+
+    setCurrentlySpeakingIndex(index);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setCurrentlySpeakingIndex(null);
+    }
+  };
 
   useEffect(() => {
     if (userId) {
@@ -107,44 +242,16 @@ export default function ChatUI() {
   }
 
   function startNewChat() {
-    if (userCredits < 500) {
-      setShowCreditDialog(true);
-      return;
-    } else if (chatId) {
-      router.push("/ai-assistant/chat");
-    } else {
-      deductCreditsAndStartChat();
-    }
-  }
-
-  async function deductCreditsAndStartChat() {
-    try {
-      const response = await fetch("/api/chat/deduct-credits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 500 }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setChatId(null);
-        setMessages([
-          {
-            role: "assistant",
-            content:
-              "Hello! I'm your MedSync AI Assistant. How Can I Help You With Your Medical Questions Today?",
-          },
-        ]);
-        setUnlockChat(true);
-        router.push("/ai-assistant/chat");
-        fetchUserCredits();
-      } else {
-        console.error("Failed to Deduct Credits:", data.error);
-      }
-    } catch (error) {
-      console.error("Error Deducting Credits:", error);
-    }
+    setChatId(null);
+    setMessages([
+      {
+        role: "assistant",
+        content:
+          "Hello! I'm your MedSync AI Assistant. How Can I Help You With Your Medical Questions Today?",
+      },
+    ]);
+    setUnlockChat(true);
+    router.push("/ai-assistant/chat");
   }
 
   function switchChat(id) {
@@ -169,6 +276,9 @@ export default function ChatUI() {
     if (e) e.preventDefault();
     if (!text.trim() || loading) return;
 
+    // Stop speaking when user sends a new message
+    stopSpeaking();
+
     const userMsg = { role: "user", content: text };
     setMessages((m) => [...m, userMsg]);
     setText("");
@@ -182,6 +292,7 @@ export default function ChatUI() {
           message: text,
           chatId: chatId,
           messageHistory: messages,
+          language: language,
         }),
       });
       const json = await r.json();
@@ -223,7 +334,6 @@ export default function ChatUI() {
           startNewChat={startNewChat}
           switchChat={switchChat}
           deleteChat={deleteChat}
-          userCredits={userCredits}
         />
       </div>
 
@@ -249,7 +359,6 @@ export default function ChatUI() {
             startNewChat={startNewChat}
             switchChat={switchChat}
             deleteChat={deleteChat}
-            userCredits={userCredits}
           />
         </div>
       </div>
@@ -278,6 +387,65 @@ export default function ChatUI() {
               AI Medical Assistant
             </h2>
           </div>
+
+          <div className="flex items-center space-x-3">
+            {/* Language Selector Segmented Control */}
+            <div className="flex bg-muted/20 border border-emerald-900/25 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  stopSpeaking();
+                  setLanguage("en-US");
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
+                  language === "en-US"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/10"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  stopSpeaking();
+                  setLanguage("te-IN");
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
+                  language === "te-IN"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/10"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                తెలుగు
+              </button>
+            </div>
+
+            {/* Auto Read Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                const nextState = !autoSpeak;
+                setAutoSpeak(nextState);
+                if (!nextState) {
+                  stopSpeaking();
+                }
+              }}
+              className={`h-9 w-9 rounded-lg border border-emerald-900/25 transition-all duration-200 ${
+                autoSpeak
+                  ? "bg-emerald-600/10 text-emerald-400 border-emerald-500/30"
+                  : "text-gray-400 hover:text-emerald-400 hover:bg-muted/10"
+              }`}
+              title={autoSpeak ? "Auto-read enabled (Click to mute)" : "Auto-read disabled (Click to enable)"}
+            >
+              {autoSpeak ? (
+                <Volume2 className="h-4.5 w-4.5 animate-pulse" />
+              ) : (
+                <VolumeX className="h-4.5 w-4.5" />
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Chat Messages */}
@@ -304,8 +472,29 @@ export default function ChatUI() {
                       <Bot className="h-5 w-5 text-emerald-400 mr-3" />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 flex flex-col">
                     <p className="text-sm">{message.content}</p>
+                    {message.role === "assistant" && (
+                      <div className="mt-2 flex justify-start">
+                        <button
+                          type="button"
+                          onClick={() => speakText(message.content, index)}
+                          className="flex items-center text-xs text-emerald-400/80 hover:text-emerald-300 transition-colors bg-emerald-950/20 border border-emerald-900/40 rounded px-1.5 py-0.5 space-x-1"
+                        >
+                          {currentlySpeakingIndex === index ? (
+                            <>
+                              <Square className="h-3 w-3 fill-emerald-400/50" />
+                              <span>Stop</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-3 w-3 fill-emerald-400/50" />
+                              <span>Listen</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -334,17 +523,23 @@ export default function ChatUI() {
           onSubmit={sendMessage}
           className="p-4 border-t border-emerald-900/20 bg-muted/10"
         >
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-center">
             <Input
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={
-                !unlockChat && !chatId
-                  ? "Unlock Chat to Start"
+                isListening
+                  ? language === "te-IN"
+                    ? "తెలుగులో మాట్లాడండి..."
+                    : "Listening... Speak now..."
+                  : language === "te-IN"
+                  ? "మీ సందేశాన్ని ఇక్కడ టైప్ చేయండి..."
                   : "Type Your Message..."
               }
-              className="flex-1 bg-muted/20 border-emerald-900/20 text-white text-sm"
-              disabled={loading || (!unlockChat && !chatId)}
+              className={`flex-1 bg-muted/20 border-emerald-900/20 text-white text-sm transition-all duration-200 ${
+                isListening ? "border-red-500/50 ring-1 ring-red-500/20" : ""
+              }`}
+              disabled={loading}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -352,6 +547,26 @@ export default function ChatUI() {
                 }
               }}
             />
+            
+            {/* Microphone button */}
+            <Button
+              type="button"
+              onClick={toggleListening}
+              disabled={loading}
+              className={`transition-all duration-300 ${
+                isListening
+                  ? "bg-red-600 hover:bg-red-700 text-white animate-pulse shadow-lg shadow-red-600/20"
+                  : "bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-900/30"
+              }`}
+              title={isListening ? "Stop listening" : "Start voice typing"}
+            >
+              {isListening ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </Button>
+
             <Button
               type="submit"
               disabled={loading || text.trim() === ""}
@@ -363,34 +578,6 @@ export default function ChatUI() {
         </form>
       </div>
 
-      {/* Credit Dialog */}
-      <Dialog open={showCreditDialog} onOpenChange={setShowCreditDialog}>
-        <DialogContent className="bg-black border border-emerald-900/20 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Insufficient Credits</DialogTitle>
-            <DialogDescription className="text-gray-300">
-              You Need 500 Credits to Start a New Chat. Please Purchase More
-              Credits to Continue.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center p-4">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-emerald-500 mb-2">
-                500
-              </div>
-              <div className="text-sm text-gray-400">Credits Required</div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => router.push("/pricing")}
-              className="bg-emerald-600 hover:bg-emerald-700 w-full"
-            >
-              Purchase Credits
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -402,36 +589,22 @@ function SidebarContent({
   startNewChat,
   switchChat,
   deleteChat,
-  userCredits,
 }) {
-  const hasEnoughCredits = userCredits >= 500;
   return (
     <>
       <div className="p-3 border-b border-emerald-900/20 flex justify-between items-center">
         {sidebarOpen && (
           <div className="flex items-center space-x-2">
             <h3 className="font-semibold text-white px-2">Chat History</h3>
-            <div className="text-sm text-emerald-400 flex items-center">
-              <CreditCard className="h-4 w-4 mr-1" />
-              {userCredits}
-            </div>
           </div>
         )}
         <Button
           variant="ghost"
           size="sm"
           onClick={startNewChat}
-          className={`${
-            hasEnoughCredits
-              ? "text-emerald-500 hover:text-emerald-300"
-              : "text-gray-500"
-          }`}
+          className="text-emerald-500 hover:text-emerald-300"
         >
-          {hasEnoughCredits ? (
-            <Plus className="h-5 w-5" />
-          ) : (
-            <Lock className="h-5 w-5" />
-          )}
+          <Plus className="h-5 w-5" />
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto">

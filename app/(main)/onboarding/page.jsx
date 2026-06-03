@@ -119,6 +119,8 @@ export default function OnboardingPage() {
     formData.append("transfusion", data.transfusion || "");
     formData.append("accident", data.accident || "");
     formData.append("medical_history", data.medical_history || "");
+    formData.append("bloodGroup", data.bloodGroup || "");
+    formData.append("emergencyContact", data.emergencyContact || "");
 
     await submitUserRole(formData);
   };
@@ -494,6 +496,38 @@ export default function OnboardingPage() {
                 {patientErrors.sugar_pp && (
                   <p className="text-red-400 text-sm mt-1">
                     {patientErrors.sugar_pp.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="bloodGroup">Blood Group</Label>
+                <Input
+                  id="bloodGroup"
+                  placeholder="Eg. O+, A-, B+"
+                  className={"bg-background border text-sm"}
+                  {...registerPatient("bloodGroup")}
+                />
+                {patientErrors.bloodGroup && (
+                  <p className="text-red-400 text-sm mt-1">
+                    {patientErrors.bloodGroup.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="emergencyContact">Emergency Contact (Phone)</Label>
+                <Input
+                  id="emergencyContact"
+                  placeholder="Eg. +91 98765 43210"
+                  className={"bg-background border text-sm"}
+                  {...registerPatient("emergencyContact")}
+                />
+                {patientErrors.emergencyContact && (
+                  <p className="text-red-400 text-sm mt-1">
+                    {patientErrors.emergencyContact.message}
                   </p>
                 )}
               </div>

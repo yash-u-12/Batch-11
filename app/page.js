@@ -5,8 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { creditBenefits, features, testimonials } from "@/lib/data";
+import { checkUser } from "@/lib/checkUser";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const user = await checkUser();
+
+  if (user?.role === "DOCTOR") {
+    redirect("/doctor");
+  } else if (user?.role === "ADMIN") {
+    redirect("/admin");
+  }
+
   return (
     <div className="bg-background">
       {/* Hero Section */}

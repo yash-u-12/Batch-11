@@ -20,43 +20,90 @@ export default function DoctorAppointmentsList() {
 
   const appointments = data?.appointments || [];
 
+  const upcomingAppointments = appointments
+    .filter((a) => a.status === "SCHEDULED")
+    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+  const pastAppointments = appointments
+    .filter((a) => a.status !== "SCHEDULED")
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
   return (
-    <Card className="border-emerald-900/20">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-white items-center flex">
-          <Calendar className="h-5 w-5 mr-2 text-emerald-400 shrink-0" />
-          Upcoming Appointments
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading Appointments...</p>
-          </div>
-        ) : appointments.length > 0 ? (
-          <div className="space-y-4">
-            {appointments.map((appointment) => (
-              <AppointmentCard
-                key={appointment.id}
-                appointment={appointment}
-                userRole="DOCTOR"
-                refetchAppointments={fetchAppointments}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <h3 className="text-xl font-medium text-white mb-2">
-              No Upcoming Appointments
-            </h3>
-            <p className="text-muted-foreground text-sm sm:text-base px-2">
-              You Don&apos;t Have Any Scheduled Appointments Yet. Make Sure
-              You&apos;ve Set Your Availability to Allow Patients to Book.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <Card className="border-emerald-900/20">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-white items-center flex">
+            <Calendar className="h-5 w-5 mr-2 text-emerald-400 shrink-0" />
+            Upcoming Appointments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading Appointments...</p>
+            </div>
+          ) : upcomingAppointments.length > 0 ? (
+            <div className="space-y-4">
+              {upcomingAppointments.map((appointment) => (
+                <AppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                  userRole="DOCTOR"
+                  refetchAppointments={fetchAppointments}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h3 className="text-xl font-medium text-white mb-2">
+                No Upcoming Appointments
+              </h3>
+              <p className="text-muted-foreground text-sm sm:text-base px-2">
+                You Don&apos;t Have Any Scheduled Appointments Yet. Make Sure
+                You&apos;ve Set Your Availability to Allow Patients to Book.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-emerald-900/20 bg-muted/10">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-white items-center flex">
+            <Calendar className="h-5 w-5 mr-2 text-emerald-400 shrink-0" />
+            Appointment History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading Appointments...</p>
+            </div>
+          ) : pastAppointments.length > 0 ? (
+            <div className="space-y-4">
+              {pastAppointments.map((appointment) => (
+                <AppointmentCard
+                  key={appointment.id}
+                  appointment={appointment}
+                  userRole="DOCTOR"
+                  refetchAppointments={fetchAppointments}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h3 className="text-xl font-medium text-white mb-2">
+                No Past Appointments
+              </h3>
+              <p className="text-muted-foreground text-sm sm:text-base px-2">
+                No completed or cancelled consultations in your record.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

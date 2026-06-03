@@ -228,15 +228,45 @@ export async function getAppointmentParticipants(appointmentId) {
 
     const appointment = await db.appointment.findUnique({
       where: { id: appointmentId },
-      select: {
-        id: true,
-        doctorId: true,
-        patientId: true,
+      include: {
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            age: true,
+            gender: true,
+            allergies: true,
+            food_habit: true,
+            medical_history: true,
+            bp_sys: true,
+            bp_dia: true,
+            sugar_fasting: true,
+            sugar_pp: true,
+          },
+        },
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            specialty: true,
+          },
+        },
       },
     });
 
     if (!appointment) {
       throw new Error("Appointment Not Found");
+    }
+
+    // Convert decimal objects to plain numbers for client serialization
+    if (appointment.patient) {
+      if (appointment.patient.sugar_fasting) {
+        appointment.patient.sugar_fasting = Number(appointment.patient.sugar_fasting);
+      }
+      if (appointment.patient.sugar_pp) {
+        appointment.patient.sugar_pp = Number(appointment.patient.sugar_pp);
+      }
     }
 
     return {

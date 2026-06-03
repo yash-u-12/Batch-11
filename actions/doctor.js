@@ -41,7 +41,7 @@ export async function updateDoctorProfile(formData) {
         experience,
         credentialUrl,
         description,
-        verificationStatus: "PENDING",
+        verificationStatus: "VERIFIED", // Auto-verify doctor in development
       },
     });
 
@@ -174,9 +174,9 @@ export async function getDoctorAppointments() {
     }
 
     const appointments = await db.appointment.findMany({
-      where: { doctorId: doctor.id, status: { in: ["SCHEDULED"] } },
+      where: { doctorId: doctor.id },
       include: { patient: true },
-      orderBy: { startTime: "asc" },
+      orderBy: { startTime: "desc" },
     });
 
     const appointmentsPlain = appointments.map((appt) => ({

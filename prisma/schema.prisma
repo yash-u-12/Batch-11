@@ -17,7 +17,7 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
-  credits           Int       @default(0)
+  credits           Int       @default(5000)
   age               Int?
   gender            String?
   address           String?
@@ -44,6 +44,17 @@ model User {
   transactions        CreditTransaction[]
   payouts             Payout[]
   chats               Chat[]
+
+  // QR and Emergency fields
+  bloodGroup             String?
+  emergencyContact       String?
+  qrToken                String?             @unique
+  emergencyAccessEnabled Boolean             @default(true)
+
+  // QR access relationships
+  patientRequests        AccessRequest[]     @relation("PatientRequests")
+  patientTempAccess      TemporaryAccess[]   @relation("PatientTempAccess")
+  patientAccessLogs      AccessLog[]         @relation("PatientAccessLogs")
 }
 
 enum UserRole {
@@ -96,6 +107,7 @@ model Appointment {
     
   videoSessionId    String?  @unique
   videoSessionToken String?
+  prescriptionUrl   String?
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -175,4 +187,45 @@ model Message {
 enum Role {
   USER
   ASSISTANT
+}
+
+model AccessRequest {
+  id             String   @id @default(uuid())
+  patientId      String
+  patient        User     @relation("PatientRequests", fields: [patientId], references: [id], onDelete: Cascade)
+  requesterName  String
+  requesterPhone String
+  requesterType  String   // "DOCTOR", "FAMILY", "OTHER" etc.
+  reason         String   @db.Text
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([patientId, status])
+}
+
+model TemporaryAccess {
+  id             String   @id @default(uuid())
+  accessToken    String   @unique
+  patientId      String
+  patient        User     @relation("PatientTempAccess", fields: [patientId], references: [id], onDelete: Cascade)
+  requesterName  String?
+  requesterPhone String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([accessToken])
+  @@index([patientId])
+}
+
+model AccessLog {
+  id             String   @id @default(uuid())
+  patientId      String
+  patient        User     @relation("PatientAccessLogs", fields: [patientId], references: [id], onDelete: Cascade)
+  accessorName   String
+  accessorRole   String   // "DOCTOR" or "EXTERNAL"
+  accessType     String   // "DIRECT_DOCTOR_ACCESS" or "PATIENT_APPROVED_ACCESS"
+  timestamp      DateTime @default(now())
+
+  @@index([patientId])
 }

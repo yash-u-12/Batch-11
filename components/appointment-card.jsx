@@ -384,7 +384,7 @@ export function AppointmentCard({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  Doctor Notes
+                  Prescription & Clinical Notes
                 </h4>
                 {userRole === "DOCTOR" &&
                   action !== "notes" &&
@@ -406,7 +406,7 @@ export function AppointmentCard({
                   <Textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Enter your Clinical Notes Here..."
+                    placeholder="Enter prescription details, recommendations, and clinical notes here..."
                     className="bg-background border-emerald-900/20 min-h-[100px] text-sm w-[95%]"
                     disabled={notesLoading}
                   />
@@ -449,7 +449,109 @@ export function AppointmentCard({
                     </p>
                   ) : (
                     <p className="text-muted-foreground italic text-sm">
-                      No Notes Added Yet
+                      No Prescription / Notes Added Yet
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Paper Prescription Document */}
+            <div className="space-y-2 pt-2 border-t border-emerald-900/10">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Paper Prescription Document
+              </h4>
+              {appointment.prescriptionUrl ? (
+                <div className="flex items-center justify-between p-3 rounded-md bg-emerald-950/20 border border-emerald-900/20 w-[95%]">
+                  <div className="text-sm text-emerald-400 font-medium truncate max-w-[60%]">
+                    Prescription Document Uploaded
+                  </div>
+                  <div className="flex gap-2">
+                    <a
+                      href={appointment.prescriptionUrl}
+                      download={`prescription-${appointment.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded flex items-center justify-center"
+                    >
+                      Download
+                    </a>
+                    {userRole === "DOCTOR" && (
+                      <label className="text-xs bg-muted hover:bg-muted/80 text-white font-medium px-3 py-1.5 rounded cursor-pointer border border-emerald-900/10 flex items-center justify-center">
+                        Replace File
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const selectedFile = e.target.files[0];
+                            if (!selectedFile) return;
+                            try {
+                              const formData = new FormData();
+                              formData.append("file", selectedFile);
+                              formData.append("appointmentId", appointment.id);
+                              
+                              const response = await fetch("/api/upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              
+                              const data = await response.json();
+                              if (data.success) {
+                                toast.success("Prescription file updated successfully!");
+                                if (refetchAppointments) refetchAppointments();
+                              } else {
+                                toast.error(data.error || "Failed to upload file");
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              toast.error("Upload error: " + err.message);
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-md bg-muted/20 border border-emerald-900/20 min-h-[50px] w-[95%] flex flex-col items-center justify-center">
+                  {userRole === "DOCTOR" ? (
+                    <label className="text-xs bg-emerald-900/20 hover:bg-emerald-900/30 text-emerald-400 font-medium px-4 py-2 rounded cursor-pointer border border-dashed border-emerald-700/30 w-full text-center">
+                      Upload Paper Prescription (Image/PDF)
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const selectedFile = e.target.files[0];
+                          if (!selectedFile) return;
+                          try {
+                            const formData = new FormData();
+                            formData.append("file", selectedFile);
+                            formData.append("appointmentId", appointment.id);
+                            
+                            const response = await fetch("/api/upload", {
+                              method: "POST",
+                              body: formData,
+                            });
+                            
+                            const data = await response.json();
+                            if (data.success) {
+                              toast.success("Prescription file uploaded successfully!");
+                              if (refetchAppointments) refetchAppointments();
+                            } else {
+                              toast.error(data.error || "Failed to upload file");
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            toast.error("Upload error: " + err.message);
+                          }
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <p className="text-muted-foreground italic text-sm text-center">
+                      No Paper Prescription Uploaded
                     </p>
                   )}
                 </div>

@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import crypto from "crypto";
 
 export async function setUserRole(formData) {
   const { userId } = await auth();
@@ -46,6 +47,10 @@ export async function setUserRole(formData) {
       const transfusion = formData.get("transfusion") || null;
       const accident = formData.get("accident") || null;
       const medical_history = formData.get("medical_history") || null;
+      
+      const bloodGroup = formData.get("bloodGroup") || null;
+      const emergencyContact = formData.get("emergencyContact") || null;
+      const qrToken = crypto.randomBytes(32).toString("hex");
 
       if (!age || !gender || !address || !food_habit) {
         throw new Error("Age, Gender, Address, and Food Habit are Required");
@@ -70,6 +75,10 @@ export async function setUserRole(formData) {
           transfusion,
           accident,
           medical_history,
+          bloodGroup,
+          emergencyContact,
+          qrToken,
+          emergencyAccessEnabled: true,
         },
       });
 
@@ -97,12 +106,12 @@ export async function setUserRole(formData) {
           experience,
           credentialUrl,
           description,
-          verificationStatus: "PENDING",
+          verificationStatus: "VERIFIED", // Auto-verify doctor in development
         },
       });
 
       revalidatePath("/");
-      return { success: true, redirect: "/doctor/verification" };
+      return { success: true, redirect: "/doctor" };
     }
   } catch (error) {
     console.error("Failed to Set User Role:", error);

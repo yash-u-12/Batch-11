@@ -9,6 +9,8 @@ import {
   Stethoscope,
   User,
   MessageCircle,
+  QrCode,
+  Camera,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -65,34 +67,62 @@ export default function HeaderClient({ userData }) {
 
               {/* Doctor Links */}
               {clientUser?.role === "DOCTOR" && (
-                <Link href="/doctor">
-                  <Button
-                    variant="outline"
-                    className="hidden md:inline-flex items-center gap-2"
-                  >
-                    <Stethoscope className="h-4 w-4" />
-                    Doctor Dashboard
-                  </Button>
-                  <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-                    <Stethoscope className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <div className="flex items-center space-x-2">
+                  <Link href="/doctor">
+                    <Button
+                      variant="outline"
+                      className="hidden md:inline-flex items-center gap-2"
+                    >
+                      <Stethoscope className="h-4 w-4" />
+                      Doctor Dashboard
+                    </Button>
+                    <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
+                      <Stethoscope className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/doctor/scanner">
+                    <Button
+                      variant="outline"
+                      className="hidden md:inline-flex items-center gap-2 bg-emerald-900/10 border-emerald-700/30 text-emerald-400"
+                    >
+                      <Camera className="h-4 w-4" />
+                      QR Scanner
+                    </Button>
+                    <Button variant="ghost" className="md:hidden w-10 h-10 p-0 bg-emerald-900/10 border-emerald-700/30 text-emerald-400">
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
               )}
-
+ 
               {/* Patient Links */}
               {clientUser?.role === "PATIENT" && (
-                <Link href="/appointments">
-                  <Button
-                    variant="outline"
-                    className="hidden md:inline-flex items-center gap-2"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    My Appointments
-                  </Button>
-                  <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <div className="flex items-center space-x-2">
+                  <Link href="/appointments">
+                    <Button
+                      variant="outline"
+                      className="hidden md:inline-flex items-center gap-2"
+                    >
+                      <Calendar className="h-4 w-4" />
+                      My Appointments
+                    </Button>
+                    <Button variant="ghost" className="md:hidden w-10 h-10 p-0">
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/health-card">
+                    <Button
+                      variant="outline"
+                      className="hidden md:inline-flex items-center gap-2 bg-emerald-900/10 border-emerald-700/30 text-emerald-400"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      My Health Card
+                    </Button>
+                    <Button variant="ghost" className="md:hidden w-10 h-10 p-0 bg-emerald-900/10 border-emerald-700/30 text-emerald-400">
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
               )}
 
               {/* Unassigned Role */}
