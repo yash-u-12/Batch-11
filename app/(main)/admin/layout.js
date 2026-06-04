@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { verifyAdmin } from "@/actions/admin";
 import { redirect } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import VideoCall from "./video-call-ui";
 
 export default async function VideoCallPage({ searchParams }) {
