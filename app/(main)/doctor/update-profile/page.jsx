@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getCurrentUser } from "@/actions/onboarding";
 import { redirect } from "next/navigation";
 import { Stethoscope } from "lucide-react";

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ClipboardCheck, AlertCircle, XCircle } from "lucide-react";
 import {
   Card,

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getDoctorAppointments, getDoctorAvailability } from "@/actions/doctor";
 import { AvailabilitySettings } from "./_components/availability-settings";

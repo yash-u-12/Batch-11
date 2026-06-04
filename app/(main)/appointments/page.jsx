@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getPatientAppointments } from "@/actions/patient";
 import { AppointmentCard } from "@/components/appointment-card";
 import { PageHeader } from "@/components/page-header";

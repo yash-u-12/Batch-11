@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import React from "react";
 import ChatUI from "@/components/ai-chat";
 import { checkUser } from "@/lib/checkUser";

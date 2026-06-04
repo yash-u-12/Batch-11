@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { TabsContent } from "@/components/ui/tabs";
 import { PendingDoctors } from "./components/pending-doctors";
 import { VerifiedDoctors } from "./components/verified-doctors";
