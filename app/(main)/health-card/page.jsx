@@ -183,7 +183,7 @@ export default function HealthCardPage() {
               {qrData && (
                 <PatientQRCard
                   patientData={{
-                    name: qrData.bloodGroup ? qrData.bloodGroup : "Patient Profile",
+                    name: qrData.name || "Patient Profile",
                     id: qrData.token ? `PAT-${qrData.token.substring(0, 8).toUpperCase()}` : "N/A",
                     ...qrData,
                   }}

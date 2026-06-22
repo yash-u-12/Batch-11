@@ -53,7 +53,15 @@ export default function QrAccessPage({ params: paramsPromise }) {
 
   const checkAccess = async () => {
     try {
-      const res = await fetch(`/api/qr/${token}`);
+      let url = `/api/qr/${token}`;
+      if (typeof window !== "undefined") {
+        const savedRequestId = localStorage.getItem(`access_request_${token}`);
+        if (savedRequestId) {
+          url += `?requestId=${savedRequestId}`;
+        }
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
       
       if (data.status === "AUTHORIZED") {
@@ -73,10 +81,19 @@ export default function QrAccessPage({ params: paramsPromise }) {
   };
 
   useEffect(() => {
-    if (token) {
-      checkAccess();
-    }
-  }, [token]);
+    if (!token) return;
+
+    checkAccess();
+
+    // Auto-poll approval status every 5 seconds if not yet authorized
+    const interval = setInterval(() => {
+      if (accessStatus !== "AUTHORIZED") {
+        checkAccess();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [token, accessStatus]);
 
   const handleRequestAccess = async (e) => {
     e.preventDefault();
@@ -101,6 +118,9 @@ export default function QrAccessPage({ params: paramsPromise }) {
       if (data.success) {
         toast.success("Access request sent to patient! Please ask them to approve it.");
         setRequestSubmitted(true);
+        if (typeof window !== "undefined" && data.request?.id) {
+          localStorage.setItem(`access_request_${token}`, data.request.id);
+        }
       } else {
         toast.error(data.error || "Failed to submit request");
       }

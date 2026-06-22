@@ -37,6 +37,9 @@ export async function GET(req) {
     return NextResponse.json({
       qrCode,
       token,
+      name: user.name || "Patient Profile",
+      age: user.age || null,
+      gender: user.gender || "",
       bloodGroup: user.bloodGroup || "",
       emergencyContact: user.emergencyContact || "",
       emergencyAccessEnabled: user.emergencyAccessEnabled,

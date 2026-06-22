@@ -15,7 +15,71 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: "Patient record not found" }, { status: 404 });
     }
 
-    // 2. Check logged-in user
+    // 2. Check query param requestId for approved access request
+    const url = new URL(req.url);
+    const requestId = url.searchParams.get("requestId");
+
+    if (requestId) {
+      const accessRequest = await db.accessRequest.findUnique({
+        where: { id: requestId },
+      });
+
+      if (
+        accessRequest &&
+        accessRequest.patientId === patient.id &&
+        accessRequest.status === "APPROVED"
+      ) {
+        const timeSinceApproval = Date.now() - new Date(accessRequest.updatedAt).getTime();
+        const fifteenMinutes = 15 * 60 * 1000;
+
+        if (timeSinceApproval <= fifteenMinutes) {
+          // Log approved access
+          await db.accessLog.create({
+            data: {
+              patientId: patient.id,
+              accessorName: accessRequest.requesterName || "Verified Requester",
+              accessorRole: "EXTERNAL",
+              accessType: "PATIENT_APPROVED_ACCESS",
+            },
+          });
+
+          // Fetch patient records (medical history + appointments)
+          const appointments = await db.appointment.findMany({
+            where: { patientId: patient.id },
+            include: {
+              doctor: {
+                select: {
+                  name: true,
+                  specialty: true,
+                },
+              },
+            },
+            orderBy: { startTime: "desc" },
+          });
+
+          const serializedPatient = {
+            ...patient,
+            sugar_fasting: patient.sugar_fasting ? Number(patient.sugar_fasting) : null,
+            sugar_pp: patient.sugar_pp ? Number(patient.sugar_pp) : null,
+          };
+
+          return NextResponse.json({
+            status: "AUTHORIZED",
+            patient: serializedPatient,
+            history: {
+              appointments,
+              medical_history: patient.medical_history || "",
+              allergies: patient.allergies || "",
+              surgery: patient.surgery || "",
+              transfusion: patient.transfusion || "",
+              accident: patient.accident || "",
+            },
+          });
+        }
+      }
+    }
+
+    // 3. Check logged-in user
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({
