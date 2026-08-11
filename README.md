@@ -1,4 +1,4 @@
-# Tech Champions HackNovate 2025 – Setup Guide
+
 
 This project uses several external services (Stripe, Pinecone, Google Gemini, Vonage Video API, Clerk, and a database via Prisma). To run the app locally or in production, you need to provide environment variables and API keys.
 
