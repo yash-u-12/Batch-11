@@ -48,7 +48,6 @@ Note: `lib/embeddings.js` calls a hosted embeddings endpoint and does not requir
 2. Install dependencies and set up Prisma:
 
 ```powershell
-cd "c:\Users\thati\Desktop\hackathon\Tech-Champions-HackNovate-2025-main"
 npm install
 npx prisma generate
 npx prisma migrate deploy
