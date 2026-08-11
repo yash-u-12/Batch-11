@@ -4,7 +4,7 @@ This project uses several external services (Stripe, Pinecone, Google Gemini, Vo
 
 ## Required Environment Variables
 
-Add these variables to a `.env` file at the project root (`Tech-Champions-HackNovate-2025-main/.env`). See `.env.example` for a ready-to-copy template.
+Add these variables to a `.env` file at the project root . See `.env.example` for a ready-to-copy template.
 
 - **Database**
 	- `DATABASE_URL`: Connection string for your DB (Postgres/MySQL/etc.). Used by Prisma.
